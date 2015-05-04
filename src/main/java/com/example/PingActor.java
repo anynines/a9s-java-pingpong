@@ -1,9 +1,10 @@
 package com.example;
 
-import akka.actor.UntypedActor;
-import akka.actor.Props;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
-import akka.japi.Creator;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -29,7 +30,6 @@ public class PingActor extends UntypedActor {
         }
     }
 
-    private int counter = 0;
     private ActorRef pongActor = getContext().actorOf(PongActor.props(), "pongActor");
 
     public void onReceive(Object message) throws Exception {
@@ -39,12 +39,13 @@ public class PingActor extends UntypedActor {
         } else if (message instanceof PongActor.PongMessage) {
             PongActor.PongMessage pong = (PongActor.PongMessage) message;
             log.info("In PingActor - received message: {}", pong.getText());
-            counter += 1;
-            if (counter == 3) {
-                getContext().system().shutdown();
-            } else {
-                getSender().tell(new PingMessage("ping"), getSelf());
-            }
+            
+            // schedule ping to be send in 1 second
+            getContext()
+            .system()
+            .scheduler()
+            .scheduleOnce(Duration.create(1, SECONDS), getSender(),
+            		new PingMessage("ping"), getContext().dispatcher(), getSelf());
         } else {
             unhandled(message);
         }

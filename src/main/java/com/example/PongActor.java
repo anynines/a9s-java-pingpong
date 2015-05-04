@@ -1,8 +1,9 @@
 package com.example;
 
-import akka.actor.UntypedActor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import scala.concurrent.duration.Duration;
 import akka.actor.Props;
-import akka.japi.Creator;
+import akka.actor.UntypedActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -29,7 +30,13 @@ public class PongActor extends UntypedActor {
         if (message instanceof PingActor.PingMessage) {
             PingActor.PingMessage ping = (PingActor.PingMessage) message;
             log.info("In PongActor - received message: {}", ping.getText());
-            getSender().tell(new PongMessage("pong"), getSelf());
+            
+            // schedule pong to be send in 1 second
+            getContext()
+            .system()
+            .scheduler()
+            .scheduleOnce(Duration.create(1, SECONDS), getSender(),
+            		new PongMessage("pong"), getContext().dispatcher(), getSelf());
         } else {
             unhandled(message);
         }
